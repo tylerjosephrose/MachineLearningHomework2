@@ -22,6 +22,13 @@ def Sum(matrix):
         sum = sum + matrix[row, 0]
     return sum
 
+def meanColumn(column):
+    total = 0
+    for row in range(len(column)):
+        total += column[row]
+    mean = total/len(column)
+    return mean
+
 # imported dataset
 lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 m = len(lines)
@@ -32,6 +39,13 @@ for i in range(m):
     splitString = lines[i].split(',')
     x[i] = splitString[0]
     y[i] = splitString[1]
+
+meanVector = sympy.Matrix.zeros(3, 1)
+for j in range(3):
+    meanVector[j] = meanColumn(x.col(j))
+# meanVector = x.col_op(1, lambda r, i: sum(i)/m); x
+
+
 
 # m is the number of training samples
 m = x.shape[0]

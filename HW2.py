@@ -26,12 +26,14 @@ def Sum(matrix):
 lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 m = len(lines)
 print(m)
-x = sympy.Matrix.zeros(m, 1)
+x = sympy.Matrix.zeros(m, 3)
 y = sympy.Matrix.zeros(m, 1)
 for i in range(m):
     splitString = lines[i].split(',')
-    x[i] = splitString[0]
-    y[i] = splitString[1]
+    x[i,0] = splitString[0]
+    x[i,1] = splitString[1]
+    x[i,2] = splitString[2]
+    y[i] = splitString[3]
 
 # m is the number of training samples
 m = x.shape[0]

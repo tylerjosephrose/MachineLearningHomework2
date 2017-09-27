@@ -1,35 +1,37 @@
 import sys
 try:
-	import sympy
-	from sympy import pprint, init_printing, Sum, lambdify
-	from sympy.abc import k
-	# The below are used for plotting.
-	from numpy import linspace, matrix
-	import matplotlib.pyplot as mpl
+    import sympy
+    from sympy import pprint, init_printing, Sum, lambdify
+    from sympy.abc import k
+    # The below are used for plotting
+    import numpy as np
+    from numpy import linspace, matrix
+    import matplotlib.pyplot as mpl
 except ImportError:
-	sys.exit("""You need sympy, numpy, and matplotlib! Install these by running:
-				pip install sympy
-				pip install numpy
-				pip install matplotlib""")
+    sys.exit("""You need sympy, numpy, and matplotlib! Install these by running:
+                pip install sympy
+                pip install numpy
+                pip install matplotlib""")
 
 init_printing()
 
 def Sum(matrix):
-	sum = matrix[0, 0]
-	size = matrix.shape[0]
-	for row in range(1, size):
-		sum = sum + matrix[row, 0]
-	return sum
+    sum = matrix[0, 0]
+    size = matrix.shape[0]
+    for row in range(1, size):
+        sum = sum + matrix[row, 0]
+    return sum
 
 # imported dataset
-lines = [line.rstrip('\n') for line in open("HM1Data1.txt")]
+lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 m = len(lines)
+print(m)
 x = sympy.Matrix.zeros(m, 1)
 y = sympy.Matrix.zeros(m, 1)
 for i in range(m):
-	splitString = lines[i].split(',')
-	x[i] = splitString[0]
-	y[i] = splitString[1]
+    splitString = lines[i].split(',')
+    x[i] = splitString[0]
+    y[i] = splitString[1]
 
 # m is the number of training samples
 m = x.shape[0]
@@ -53,7 +55,7 @@ w = sympy.Matrix([w0, w1])
 # Define now the linear hypothesis
 hx = sympy.Matrix.zeros(m, 1)
 for row in range(m):
-	hx[row,:] = ex[row,:]*w[:,:]
+    hx[row,:] = ex[row,:]*w[:,:]
 
 # now we define the error function
 square = lambda x: x*x
@@ -77,11 +79,11 @@ lam_x = sympy.lambdify(t, linReg, modules=['numpy'])
 x_vals = linspace(float(min(x)), float(max(x)), 100)
 y_vals = lam_x(x_vals);
 
-mpl.title("Linear Regression from Symbolic Variable Solving")
+'''mpl.title("Linear Regression from Symbolic Variable Solving")
 mpl.xlabel("City Population (in 10,000s)")
 mpl.ylabel("Estimated Company Profit (in 10,000s)")
 mpl.plot(x_vals, y_vals)
-mpl.plot(x, y, 'go')
+mpl.plot(x, y, 'go')'''
 
 # we will make some predictions as well
 predict1 = 1*w0 + 3.5*w1
@@ -89,8 +91,8 @@ print("For the population = 35,000, we predict a profit of $%.2f" % (predict1*10
 predict2 = 1*w0 + 7*w1
 print("For the population = 70,000, we predict a profit of $%.2f\n" % (predict2*10000))
 
-# contour plots
-'''J_vals = J_vals.T
+'''# contour plots
+J_vals = J_vals.T
 fig = mpl.figure()
 ax = fig.add_subplot(211, projection='3d')
 w0_vals, w1_vals = np.meshgrid(w0_vals, w1_vals)

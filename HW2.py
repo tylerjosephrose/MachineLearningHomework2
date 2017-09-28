@@ -25,7 +25,6 @@ def Sum(matrix):
 # imported dataset
 lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 m = len(lines)
-print(m)
 x = sympy.Matrix.zeros(m, 3)
 y = sympy.Matrix.zeros(m, 1)
 for i in range(m):
@@ -38,20 +37,22 @@ for i in range(m):
 # m is the number of training samples
 m = x.shape[0]
 
-# Start regression here
+# Start L2 Regularization here
+# need to divide regularized data into training and test set
 
 # extend the data set by the bias column: 
 #       Each row receives a 1 in front since this is linear regression we want a 1 in front 
 #       for the b part of mx + b
 # we will call this ex for extended x
+# here we should be using the normalized data not x
 ex = sympy.Matrix(x)
 cols = sympy.Matrix.ones(m, 1)
 ex = ex.col_insert(0, cols)
 
 # now we need to set up the weight vector. we will use sympy for this as
 # we want symbolics so we can do a gradient later on
-w0, w1 = sympy.symbols('w0, w1')
-w = sympy.Matrix([w0, w1])
+w0, w1, w2, w3 = sympy.symbols('w0, w1, w2, w3')
+w = sympy.Matrix([w0, w1, w2, w3])
 
 
 # Define now the linear hypothesis
@@ -61,18 +62,36 @@ for row in range(m):
 
 # now we define the error function
 square = lambda x: x*x
-jw = Sum((hx - y).applyfunc(square))
+babyShep = 10
+jw = Sum((hx - y).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
 
 grad0 = sympy.Derivative(jw, w0).doit()
 grad1 = sympy.Derivative(jw, w1).doit()
+grad2 = sympy.Derivative(jw, w2).doit()
+grad3 = sympy.Derivative(jw, w3).doit()
 
-solution = sympy.solve([grad0, grad1], dict=True)
+solution = sympy.solve([grad0, grad1, grad2, grad3], dict=True)
 w0 = solution[0][w0]
 w1 = solution[0][w1]
+w2 = solution[0][w2]
+w3 = solution[0][w3]
 
 # print(sympy.N(hx))
 print("w0: %f" % (w0))
-print("w1: %f\n" % (w1))
+print("w1: %f" % (w1))
+print("w2: %f" % (w2))
+print("w3: %f\n" % (w3))
+minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
+print("The min is %f" % minimum)
+if minimum == abs(w0) :
+    print("w0")
+elif minimum == abs(w1) :
+    print("w1")
+elif minimum == abs(w2) :
+    print("w2")
+elif minimum == abs(w3) :
+    print("w3")
+quit()
 
 # Part 2: Plot
 t = sympy.symbols('t')

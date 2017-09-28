@@ -3,6 +3,7 @@ try:
     import sympy
     from sympy import pprint, init_printing, Sum, lambdify
     from sympy.abc import k
+    from operator import truediv
     # The below are used for plotting
     import numpy as np
     from numpy import linspace, matrix
@@ -22,6 +23,16 @@ def Sum(matrix):
         sum = sum + matrix[row, 0]
     return sum
 
+def meanColumn(column):
+    return Sum(column)/len(column)
+
+def stdColumn(column, mean):
+    length = len(column)
+    sum = 0;
+    for row in range(length):
+        sum += (column[row] - mean)**(2)
+    return ((1/length)*sum)**(1/2)
+
 # imported dataset
 lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 m = len(lines)
@@ -33,6 +44,31 @@ for i in range(m):
     x[i,1] = splitString[1]
     x[i,2] = splitString[2]
     y[i] = splitString[3]
+
+# Calculate mean and std dev.
+meanVector = sympy.Matrix.zeros(3, 1)
+stdVector = sympy.Matrix.zeros(3, 1)
+for j in range(3):
+    meanVector[j] = meanColumn(x.col(j))
+    stdVector[j] = stdColumn(x.col(j), meanVector[j])
+
+# Expand the mean and std dev matricies - sympy is dumb
+expandedMean = sympy.Matrix.zeros(m, 3)
+expandedStd = sympy.Matrix.zeros(m, 3)
+for k in range(m):
+    expandedMean[k,0] = meanVector[0]
+    expandedMean[k,1] = meanVector[1]
+    expandedMean[k,2] = meanVector[2]
+    expandedStd[k,0] = stdVector[0]
+    expandedStd[k,1] = stdVector[1]
+    expandedStd[k,2] = stdVector[2]
+
+# Normalizing sympy matricies with entry by entry :(
+standardizedX = sympy.Matrix(m, 3, list(map(truediv,(x-expandedMean),expandedStd)))
+pprint(standardizedX)
+
+
+quit()
 
 # m is the number of training samples
 m = x.shape[0]

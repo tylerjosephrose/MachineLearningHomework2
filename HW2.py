@@ -1,4 +1,5 @@
 import sys
+import random
 try:
     import sympy
     from sympy import pprint, init_printing, Sum, lambdify
@@ -65,25 +66,40 @@ for k in range(m):
 
 # Normalizing sympy matricies with entry by entry :(
 standardizedX = sympy.Matrix(m, 3, list(map(truediv,(x-expandedMean),expandedStd)))
-pprint(standardizedX)
-
-
-quit()
+#pprint(standardizedX)
 
 # m is the number of training samples
 m = x.shape[0]
 
 # Start L2 Regularization here
-# need to divide regularized data into training and test set
 
 # extend the data set by the bias column: 
 #       Each row receives a 1 in front since this is linear regression we want a 1 in front 
 #       for the b part of mx + b
 # we will call this ex for extended x
-# here we should be using the normalized data not x
-ex = sympy.Matrix(x)
+ex = sympy.Matrix(standardizedX)
 cols = sympy.Matrix.ones(m, 1)
 ex = ex.col_insert(0, cols)
+
+# next we need to split our data in half into training and test seta
+trainingX = sympy.Matrix()
+trainingY = sympy.Matrix()
+testingX = sympy.Matrix()
+testingY = sympy.Matrix()
+for i in range(97) :
+    if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
+        trainingX = trainingX.row_insert(-1, ex.row(i))
+        trainingY = trainingY.row_insert(-1, y.row(i))
+    elif testingX.shape[0] < 48 :
+        testingX = testingX.row_insert(-1, ex.row(i))
+        testingY = testingY.row_insert(-1, y.row(i))
+    else :
+        trainingX = trainingX.row_insert(-1, ex.row(i))
+        trainingY = trainingY.row_insert(-1, y.row(i))
+
+# since we are only using half of the dataset for training,
+# we will reset m to the size of the training set
+m = trainingX.shape[0]
 
 # now we need to set up the weight vector. we will use sympy for this as
 # we want symbolics so we can do a gradient later on
@@ -94,12 +110,12 @@ w = sympy.Matrix([w0, w1, w2, w3])
 # Define now the linear hypothesis
 hx = sympy.Matrix.zeros(m, 1)
 for row in range(m):
-    hx[row,:] = ex[row,:]*w[:,:]
+    hx[row,:] = trainingX[row,:]*w[:,:]
 
 # now we define the error function
 square = lambda x: x*x
 babyShep = 10
-jw = Sum((hx - y).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
+jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
 
 grad0 = sympy.Derivative(jw, w0).doit()
 grad1 = sympy.Derivative(jw, w1).doit()
@@ -118,15 +134,22 @@ print("w1: %f" % (w1))
 print("w2: %f" % (w2))
 print("w3: %f\n" % (w3))
 minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
-print("The min is %f" % minimum)
+
+# Now we will remove the attribute that has the smallest effect on the outcome
+# this is determined by whichever attribute has the smallest w value
+reducedX = sympy.Matrix(ex)
 if minimum == abs(w0) :
-    print("w0")
+    print("Removing attribute 0 from data as it has the smallest impact...")
+    reducedX.col_del(0)
 elif minimum == abs(w1) :
-    print("w1")
+    print("Removing attribute 1 from data as it has the smallest impact...")
+    reducedX.col_del(1)
 elif minimum == abs(w2) :
-    print("w2")
+    print("Removing attribute 2 from data as it has the smallest impact...")
+    reducedX.col_del(2)
 elif minimum == abs(w3) :
-    print("w3")
+    print("Removing attribute 3 from data as it has the smallest impact...")
+    reducedX.col_del(3)
 quit()
 
 # Part 2: Plot

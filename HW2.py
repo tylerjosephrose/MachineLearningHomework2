@@ -66,7 +66,6 @@ for k in range(m):
 
 # Normalizing sympy matricies with entry by entry :(
 standardizedX = sympy.Matrix(m, 3, list(map(truediv,(x-expandedMean),expandedStd)))
-#pprint(standardizedX)
 
 # m is the number of training samples
 m = x.shape[0]
@@ -81,75 +80,79 @@ ex = sympy.Matrix(standardizedX)
 cols = sympy.Matrix.ones(m, 1)
 ex = ex.col_insert(0, cols)
 
-# next we need to split our data in half into training and test seta
-trainingX = sympy.Matrix()
-trainingY = sympy.Matrix()
-testingX = sympy.Matrix()
-testingY = sympy.Matrix()
-for i in range(97) :
-    if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
-        trainingX = trainingX.row_insert(-1, ex.row(i))
-        trainingY = trainingY.row_insert(-1, y.row(i))
-    elif testingX.shape[0] < 48 :
-        testingX = testingX.row_insert(-1, ex.row(i))
-        testingY = testingY.row_insert(-1, y.row(i))
-    else :
-        trainingX = trainingX.row_insert(-1, ex.row(i))
-        trainingY = trainingY.row_insert(-1, y.row(i))
+testingError = 1000000000000000000000000000000000000000000000000000
+while(testingError > 1):
+    # next we need to split our data in half into training and test seta
+    trainingX = sympy.Matrix()
+    trainingY = sympy.Matrix()
+    testingX = sympy.Matrix()
+    testingY = sympy.Matrix()
+    for i in range(97) :
+        if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
+            trainingX = trainingX.row_insert(-1, ex.row(i))
+            trainingY = trainingY.row_insert(-1, y.row(i))
+        elif testingX.shape[0] < 48 :
+            testingX = testingX.row_insert(-1, ex.row(i))
+            testingY = testingY.row_insert(-1, y.row(i))
+        else :
+            trainingX = trainingX.row_insert(-1, ex.row(i))
+            trainingY = trainingY.row_insert(-1, y.row(i))
 
-# since we are only using half of the dataset for training,
-# we will reset m to the size of the training set
-m = trainingX.shape[0]
+    # since we are only using half of the dataset for training,
+    # we will reset m to the size of the training set
+    m = trainingX.shape[0]
 
-# now we need to set up the weight vector. we will use sympy for this as
-# we want symbolics so we can do a gradient later on
-w0, w1, w2, w3 = sympy.symbols('w0, w1, w2, w3')
-w = sympy.Matrix([w0, w1, w2, w3])
+    # now we need to set up the weight vector. we will use sympy for this as
+    # we want symbolics so we can do a gradient later on
+    w0, w1, w2, w3 = sympy.symbols('w0, w1, w2, w3')
+    w = sympy.Matrix([w0, w1, w2, w3])
 
 
-# Define now the linear hypothesis
-hx = sympy.Matrix.zeros(m, 1)
-for row in range(m):
-    hx[row,:] = trainingX[row,:]*w[:,:]
+    # Define now the linear hypothesis
+    hx = sympy.Matrix.zeros(m, 1)
+    for row in range(m):
+        hx[row,:] = trainingX[row,:]*w[:,:]
 
-# now we define the error function
-square = lambda x: x*x
-babyShep = 10
-jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
+    # now we define the error function
+    square = lambda x: x*x
+    babyShep = 10
+    jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
 
-grad0 = sympy.Derivative(jw, w0).doit()
-grad1 = sympy.Derivative(jw, w1).doit()
-grad2 = sympy.Derivative(jw, w2).doit()
-grad3 = sympy.Derivative(jw, w3).doit()
+    grad0 = sympy.Derivative(jw, w0).doit()
+    grad1 = sympy.Derivative(jw, w1).doit()
+    grad2 = sympy.Derivative(jw, w2).doit()
+    grad3 = sympy.Derivative(jw, w3).doit()
 
-solution = sympy.solve([grad0, grad1, grad2, grad3], dict=True)
-w0 = solution[0][w0]
-w1 = solution[0][w1]
-w2 = solution[0][w2]
-w3 = solution[0][w3]
+    solution = sympy.solve([grad0, grad1, grad2, grad3], dict=True)
+    w0 = solution[0][w0]
+    w1 = solution[0][w1]
+    w2 = solution[0][w2]
+    w3 = solution[0][w3]
 
-# print(sympy.N(hx))
-print("w0: %f" % (w0))
-print("w1: %f" % (w1))
-print("w2: %f" % (w2))
-print("w3: %f\n" % (w3))
-minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
+    # print(sympy.N(hx))
+    print("w0: %f" % (w0))
+    print("w1: %f" % (w1))
+    print("w2: %f" % (w2))
+    print("w3: %f\n" % (w3))
+    minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
 
-# Now we will remove the attribute that has the smallest effect on the outcome
-# this is determined by whichever attribute has the smallest w value
-reducedX = sympy.Matrix(ex)
-if minimum == abs(w0) :
-    print("Removing attribute 0 from data as it has the smallest impact...")
-    reducedX.col_del(0)
-elif minimum == abs(w1) :
-    print("Removing attribute 1 from data as it has the smallest impact...")
-    reducedX.col_del(1)
-elif minimum == abs(w2) :
-    print("Removing attribute 2 from data as it has the smallest impact...")
-    reducedX.col_del(2)
-elif minimum == abs(w3) :
-    print("Removing attribute 3 from data as it has the smallest impact...")
-    reducedX.col_del(3)
+    # Now we will remove the attribute that has the smallest effect on the outcome
+    # this is determined by whichever attribute has the smallest w value
+    reducedX = sympy.Matrix(ex)
+    if minimum == abs(w0) :
+        print("Removing attribute 0 from data as it has the smallest impact...")
+        reducedX.col_del(0)
+    elif minimum == abs(w1) :
+        print("Removing attribute 1 from data as it has the smallest impact...")
+        reducedX.col_del(1)
+    elif minimum == abs(w2) :
+        print("Removing attribute 2 from data as it has the smallest impact...")
+        reducedX.col_del(2)
+    elif minimum == abs(w3) :
+        print("Removing attribute 3 from data as it has the smallest impact...")
+        reducedX.col_del(3)
+
+
 quit()
 
 # Part 2: Plot

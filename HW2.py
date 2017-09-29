@@ -80,27 +80,29 @@ ex = sympy.Matrix(standardizedX)
 cols = sympy.Matrix.ones(m, 1)
 ex = ex.col_insert(0, cols)
 
-testingError = 1000000000000000000000000000000000000000000000000000
-while(testingError > 1):
-    # next we need to split our data in half into training and test seta
-    trainingX = sympy.Matrix()
-    trainingY = sympy.Matrix()
-    testingX = sympy.Matrix()
-    testingY = sympy.Matrix()
-    for i in range(97) :
-        if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
-            trainingX = trainingX.row_insert(-1, ex.row(i))
-            trainingY = trainingY.row_insert(-1, y.row(i))
-        elif testingX.shape[0] < 48 :
-            testingX = testingX.row_insert(-1, ex.row(i))
-            testingY = testingY.row_insert(-1, y.row(i))
-        else :
-            trainingX = trainingX.row_insert(-1, ex.row(i))
-            trainingY = trainingY.row_insert(-1, y.row(i))
+# next we need to split our data in half into training and test seta
+trainingX = sympy.Matrix()
+trainingY = sympy.Matrix()
+testingX = sympy.Matrix()
+testingY = sympy.Matrix()
+for i in range(97) :
+    if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
+        trainingX = trainingX.row_insert(-1, ex.row(i))
+        trainingY = trainingY.row_insert(-1, y.row(i))
+    elif testingX.shape[0] < 48 :
+        testingX = testingX.row_insert(-1, ex.row(i))
+        testingY = testingY.row_insert(-1, y.row(i))
+    else :
+        trainingX = trainingX.row_insert(-1, ex.row(i))
+        trainingY = trainingY.row_insert(-1, y.row(i))
 
-    # since we are only using half of the dataset for training,
-    # we will reset m to the size of the training set
-    m = trainingX.shape[0]
+# since we are only using half of the dataset for training,
+# we will reset m to the size of the training set
+m = trainingX.shape[0]
+testingError = 100
+babyShep = 10
+count = 0
+while(count < 10):
 
     # now we need to set up the weight vector. we will use sympy for this as
     # we want symbolics so we can do a gradient later on
@@ -115,7 +117,6 @@ while(testingError > 1):
 
     # now we define the error function
     square = lambda x: x*x
-    babyShep = 10
     jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
 
     grad0 = sympy.Derivative(jw, w0).doit()
@@ -129,12 +130,15 @@ while(testingError > 1):
     w2 = solution[0][w2]
     w3 = solution[0][w3]
     wSolved = sympy.Matrix([w0, w1, w2, w3])
-    
+
     htest = sympy.Matrix.zeros(48, 1)
     for row in range(48):
         htest[row,:] = testingX[row,:]*wSolved[:,:]
     testingError = Sum((htest - testingY).applyfunc(square))/48
     print(testingError)
+    babyShep -= .2
+    print(babyShep)
+    count+=1
 
 # print(sympy.N(hx))
 print("w0: %f" % (w0))

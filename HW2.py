@@ -128,29 +128,36 @@ while(testingError > 1):
     w1 = solution[0][w1]
     w2 = solution[0][w2]
     w3 = solution[0][w3]
+    wSolved = sympy.Matrix([w0, w1, w2, w3])
+    
+    htest = sympy.Matrix.zeros(48, 1)
+    for row in range(48):
+        htest[row,:] = testingX[row,:]*wSolved[:,:]
+    testingError = Sum((htest - testingY).applyfunc(square))/48
+    print(testingError)
 
-    # print(sympy.N(hx))
-    print("w0: %f" % (w0))
-    print("w1: %f" % (w1))
-    print("w2: %f" % (w2))
-    print("w3: %f\n" % (w3))
-    minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
+# print(sympy.N(hx))
+print("w0: %f" % (w0))
+print("w1: %f" % (w1))
+print("w2: %f" % (w2))
+print("w3: %f\n" % (w3))
+minimum = min(abs(w0), abs(w1), abs(w2), abs(w3))
 
-    # Now we will remove the attribute that has the smallest effect on the outcome
-    # this is determined by whichever attribute has the smallest w value
-    reducedX = sympy.Matrix(ex)
-    if minimum == abs(w0) :
-        print("Removing attribute 0 from data as it has the smallest impact...")
-        reducedX.col_del(0)
-    elif minimum == abs(w1) :
-        print("Removing attribute 1 from data as it has the smallest impact...")
-        reducedX.col_del(1)
-    elif minimum == abs(w2) :
-        print("Removing attribute 2 from data as it has the smallest impact...")
-        reducedX.col_del(2)
-    elif minimum == abs(w3) :
-        print("Removing attribute 3 from data as it has the smallest impact...")
-        reducedX.col_del(3)
+# Now we will remove the attribute that has the smallest effect on the outcome
+# this is determined by whichever attribute has the smallest w value
+reducedX = sympy.Matrix(ex)
+if minimum == abs(w0) :
+    print("Removing attribute 0 from data as it has the smallest impact...")
+    reducedX.col_del(0)
+elif minimum == abs(w1) :
+    print("Removing attribute 1 from data as it has the smallest impact...")
+    reducedX.col_del(1)
+elif minimum == abs(w2) :
+    print("Removing attribute 2 from data as it has the smallest impact...")
+    reducedX.col_del(2)
+elif minimum == abs(w3) :
+    print("Removing attribute 3 from data as it has the smallest impact...")
+    reducedX.col_del(3)
 
 
 quit()

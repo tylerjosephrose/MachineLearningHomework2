@@ -163,9 +163,85 @@ elif minimum == abs(w3) :
     print("Removing attribute 3 from data as it has the smallest impact...")
     reducedX.col_del(3)
 
+# Cross Validation
+redX1 = sympy.Matrix()
+redY1 = sympy.Matrix()
+redX2 = sympy.Matrix()
+redY2 = sympy.Matrix()
+redX3 = sympy.Matrix()
+redY3 = sympy.Matrix()
+for i in range(97) :
+    rand = random.randint(0,2)
+    if rand == 0 and redX1.shape[0] < 33 :
+        redX1 = redX1.row_insert(-1, reducedX.row(i))
+        redY1 = redY1.row_insert(-1, y.row(i))
+    elif rand == 1 and redX2.shape[0] < 32 or rand == 0 and redX1.shape[0] == 33 and redX2.shape[0] < 33:
+        redX2 = redX2.row_insert(-1, reducedX.row(i))
+        redY2 = redY2.row_insert(-1, y.row(i))
+    elif redX3.shape[0] < 32 :
+        redX3 = redX3.row_insert(-1, reducedX.row(i))
+        redY3 = redY3.row_insert(-1, y.row(i))
+    elif redX1.shape[0] < 33 :
+        redX1 = redX1.row_insert(-1, reducedX.row(i))
+        redY1 = redY1.row_insert(-1, y.row(i))
+    else :
+        redX2 = redX2.row_insert(-1, reducedX.row(i))
+        redY2 = redY2.row_insert(-1, y.row(i))
+dataX = [redX1, redX2, redX3]
+dataY = [redY1, redY2, redY3]
+SumError = 0;
+for i in range(3) :
+    # now we need to set up the weight vector. we will use sympy for this as
+    # we want symbolics so we can do a gradient later on
+    w0, w1, w2 = sympy.symbols('w0, w1, w2')
+    w = sympy.Matrix([w0, w1, w2])
+
+
+    # Define now the linear hypothesis
+    htrain = sympy.Matrix.zeros(dataX[i].shape[0], 1)
+    for row in range(dataX[i].shape[0]):
+        htrain[row,:] = dataX[i][row,:]*w[:,:]
+
+    # now we define the error function
+    square = lambda x: x*x
+    jw = Sum((htrain - dataY[i]).applyfunc(square))
+
+    grad0 = sympy.Derivative(jw, w0).doit()
+    grad1 = sympy.Derivative(jw, w1).doit()
+    grad2 = sympy.Derivative(jw, w2).doit()
+
+    solution = sympy.solve([grad0, grad1, grad2, grad3], dict=True)
+    w0 = solution[0][w0]
+    w1 = solution[0][w1]
+    w2 = solution[0][w2]
+    wSolved = sympy.Matrix([w0, w1, w2])
+
+    testlength = 97 - dataX[i].shape[0]
+    testDataX = sympy.Matrix()
+    testDataY = sympy.Matrix()
+    if i != 0 :
+        for j in range(dataX[0].shape[0]) :
+            testDataX = testDataX.row_insert(-1, dataX[0].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[0].row(j))
+    if i != 1 :
+        for j in range(dataX[1].shape[0]) :
+            testDataX = testDataX.row_insert(-1, dataX[1].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[1].row(j))
+    if i != 2 :
+        for j in range(dataX[2].shape[0]) :
+            testDataX = testDataX.row_insert(-1, dataX[2].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[2].row(j))
+
+    htest = sympy.Matrix.zeros(testlength, 1)
+    for row in range(testlength):
+        htest[row,:] = testDataX[row,:]*wSolved[:,:]
+    testingError = Sum((htest - testDataY).applyfunc(square))/testlength
+    SumError = SumError + testingError
+    print("testing error is: %f" % testingError)
+SumError = SumError/3
+print("average error for linear is %f" % SumError)
 
 quit()
-
 # Part 2: Plot
 t = sympy.symbols('t')
 linReg = w0 + w1*t

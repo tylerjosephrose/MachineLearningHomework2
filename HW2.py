@@ -135,9 +135,7 @@ while(count < 10):
     for row in range(48):
         htest[row,:] = testingX[row,:]*wSolved[:,:]
     testingError = Sum((htest - testingY).applyfunc(square))/48
-    print(testingError)
     babyShep -= .2
-    print(babyShep)
     count+=1
 
 # print(sympy.N(hx))
@@ -162,6 +160,30 @@ elif minimum == abs(w2) :
 elif minimum == abs(w3) :
     print("Removing attribute 3 from data as it has the smallest impact...")
     reducedX.col_del(3)
+
+
+#Start of Cross-validation
+# next we need to split our data in three
+x1 = sympy.Matrix()
+x2 = sympy.Matrix()
+x3 = sympy.Matrix()
+y1 = sympy.Matrix()
+y2 = sympy.Matrix()
+y3 = sympy.Matrix()
+for i in range(97) :
+    if random.randint(0, 1) == 1 and trainingX.shape[0] < 32 :
+        x1 = x1.row_insert(-1, reducedX.row(i))
+        y1 = y1.row_insert(-1, y.row(i))
+    elif x2.shape[0] < 32 :
+        x2 = x2.row_insert(-1, reducedX.row(i))
+        y2 = y2.row_insert(-1, y.row(i))
+    elif x3.shape[0] < 32 :
+        x3 = x3.row_insert(-1, reducedX.row(i))
+        y3 = y3.row_insert(-1, y.row(i))
+    else :
+        x1 = x1.row_insert(-1, reducedX.row(i))
+        y1 = y1.row_insert(-1, y.row(i))
+
 
 
 quit()

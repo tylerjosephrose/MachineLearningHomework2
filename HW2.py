@@ -29,10 +29,12 @@ def meanColumn(column):
 
 def stdColumn(column, mean):
     length = len(column)
-    sum = 0;
+    sum = 0
     for row in range(length):
         sum += (column[row] - mean)**(2)
     return ((1/length)*sum)**(1/2)
+
+square = lambda x: x*x
 
 # imported dataset
 lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
@@ -116,7 +118,6 @@ while(count < 10):
         hx[row,:] = trainingX[row,:]*w[:,:]
 
     # now we define the error function
-    square = lambda x: x*x
     jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
 
     grad0 = sympy.Derivative(jw, w0).doit()
@@ -161,6 +162,10 @@ elif minimum == abs(w3) :
     print("Removing attribute 3 from data as it has the smallest impact...")
     reducedX.col_del(3)
 
+
+reducedQuadX = reducedX.col_insert(3, reducedX.col(1).applyfunc(square))
+reducedQuadX = reducedQuadX.col_insert(4, reducedX.col(2).applyfunc(square))
+
 # Cross Validation
 redX1 = sympy.Matrix()
 redY1 = sympy.Matrix()
@@ -168,26 +173,39 @@ redX2 = sympy.Matrix()
 redY2 = sympy.Matrix()
 redX3 = sympy.Matrix()
 redY3 = sympy.Matrix()
+
+redQuadX1 = sympy.Matrix()
+redQuadX2 = sympy.Matrix()
+redQuadX3 = sympy.Matrix()
+
 for i in range(97) :
     rand = random.randint(0,2)
     if rand == 0 and redX1.shape[0] < 33 :
         redX1 = redX1.row_insert(-1, reducedX.row(i))
         redY1 = redY1.row_insert(-1, y.row(i))
+        redQuadX1 = redQuadX1.row_insert(-1, reducedQuadX.row(i))
     elif rand == 1 and redX2.shape[0] < 32 or rand == 0 and redX1.shape[0] == 33 and redX2.shape[0] < 33:
         redX2 = redX2.row_insert(-1, reducedX.row(i))
         redY2 = redY2.row_insert(-1, y.row(i))
+        redQuadX2 = redQuadX2.row_insert(-1, reducedQuadX.row(i))
     elif redX3.shape[0] < 32 :
         redX3 = redX3.row_insert(-1, reducedX.row(i))
         redY3 = redY3.row_insert(-1, y.row(i))
+        redQuadX3 = redQuadX3.row_insert(-1, reducedQuadX.row(i))
     elif redX1.shape[0] < 33 :
         redX1 = redX1.row_insert(-1, reducedX.row(i))
         redY1 = redY1.row_insert(-1, y.row(i))
+        redQuadX1 = redQuadX1.row_insert(-1, reducedQuadX.row(i))
     else :
         redX2 = redX2.row_insert(-1, reducedX.row(i))
         redY2 = redY2.row_insert(-1, y.row(i))
+        redQuadX2 = redQuadX2.row_insert(-1, reducedQuadX.row(i))
+
 dataX = [redX1, redX2, redX3]
 dataY = [redY1, redY2, redY3]
-SumError = 0;
+dataQuadX = [redQuadX1, redQuadX2, redQuadX3]
+
+LinearSumError = 0
 for i in range(3) :
     # now we need to set up the weight vector. we will use sympy for this as
     # we want symbolics so we can do a gradient later on
@@ -200,7 +218,6 @@ for i in range(3) :
         htrain[row,:] = dataX[i][row,:]*w[:,:]
 
     # now we define the error function
-    square = lambda x: x*x
     jw = Sum((htrain - dataY[i]).applyfunc(square))
 
     grad0 = sympy.Derivative(jw, w0).doit()
@@ -233,10 +250,70 @@ for i in range(3) :
     for row in range(testlength):
         htest[row,:] = testDataX[row,:]*wSolved[:,:]
     testingError = Sum((htest - testDataY).applyfunc(square))/testlength
-    SumError = SumError + testingError
-    print("testing error is: %f" % testingError)
-SumError = SumError/3
-print("average error for linear is %f" % SumError)
+    LinearSumError = LinearSumError + testingError
+    print("testing linear error is: %f" % testingError)
+LinearSumError = LinearSumError/3
+print("average error for linear is %f" % LinearSumError)
+
+QuadSumError = 0
+for i in range(3) :
+    # now we need to set up the weight vector. we will use sympy for this as
+    # we want symbolics so we can do a gradient later on
+    w0, w1, w2, w3, w4 = sympy.symbols('w0, w1, w2, w3, w4')
+    w = sympy.Matrix([w0, w1, w2, w3, w4])
+
+    # Define now the linear hypothesis
+    htrain = sympy.Matrix.zeros(dataQuadX[i].shape[0], 1)
+    for row in range(dataQuadX[i].shape[0]):
+        htrain[row,:] = dataQuadX[i][row,:]*w[:,:]
+
+    # now we define the error function
+    jw = Sum((htrain - dataY[i]).applyfunc(square))
+
+    grad0 = sympy.Derivative(jw, w0).doit()
+    grad1 = sympy.Derivative(jw, w1).doit()
+    grad2 = sympy.Derivative(jw, w2).doit()
+    grad3 = sympy.Derivative(jw, w3).doit()
+    grad4 = sympy.Derivative(jw, w4).doit()
+
+    solution = sympy.solve([grad0, grad1, grad2, grad3, grad4], dict=True)
+    w0 = solution[0][w0]
+    w1 = solution[0][w1]
+    w2 = solution[0][w2]
+    w3 = solution[0][w3]
+    w4 = solution[0][w4]
+    wSolved = sympy.Matrix([w0, w1, w2, w3, w4])
+
+    testlength = 97 - dataQuadX[i].shape[0]
+    testDataQuadX = sympy.Matrix()
+    testDataY = sympy.Matrix()
+    if i != 0 :
+        for j in range(dataQuadX[0].shape[0]) :
+            testDataQuadX = testDataQuadX.row_insert(-1, dataQuadX[0].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[0].row(j))
+    if i != 1 :
+        for j in range(dataQuadX[1].shape[0]) :
+            testDataQuadX = testDataQuadX.row_insert(-1, dataQuadX[1].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[1].row(j))
+    if i != 2 :
+        for j in range(dataQuadX[2].shape[0]) :
+            testDataQuadX = testDataQuadX.row_insert(-1, dataQuadX[2].row(j))
+            testDataY = testDataY.row_insert(-1, dataY[2].row(j))
+
+    htest = sympy.Matrix.zeros(testlength, 1)
+    for row in range(testlength):
+        htest[row,:] = testDataQuadX[row,:]*wSolved[:,:]
+    testingError = Sum((htest - testDataY).applyfunc(square))/testlength
+    QuadSumError = QuadSumError + testingError
+    print("testing quad error is: %f" % testingError)
+QuadSumError = QuadSumError/3
+print("average error for quad is %f" % QuadSumError)
+
+# 
+if(LinearSumError > QuadSumError):
+    # do shit
+else:
+    # do shit
 
 quit()
 # Part 2: Plot
@@ -244,7 +321,7 @@ t = sympy.symbols('t')
 linReg = w0 + w1*t
 lam_x = sympy.lambdify(t, linReg, modules=['numpy'])
 x_vals = linspace(float(min(x)), float(max(x)), 100)
-y_vals = lam_x(x_vals);
+y_vals = lam_x(x_vals)
 
 '''mpl.title("Linear Regression from Symbolic Variable Solving")
 mpl.xlabel("City Population (in 10,000s)")

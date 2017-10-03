@@ -37,7 +37,8 @@ def stdColumn(column, mean):
 square = lambda x: x*x
 
 # imported dataset
-lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
+#lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
+lines = [line.rstrip('\n') for line in open("hm2Data2.csv")]
 m = len(lines)
 x = sympy.Matrix.zeros(m, 3)
 y = sympy.Matrix.zeros(m, 1)
@@ -102,9 +103,9 @@ for i in range(97) :
 # we will reset m to the size of the training set
 m = trainingX.shape[0]
 testingError = 100
-babyShep = 10
+babyShep = 5
 count = 0
-while(count < 10):
+while(babyShep > 0):
 
     # now we need to set up the weight vector. we will use sympy for this as
     # we want symbolics so we can do a gradient later on
@@ -135,7 +136,11 @@ while(count < 10):
     htest = sympy.Matrix.zeros(48, 1)
     for row in range(48):
         htest[row,:] = testingX[row,:]*wSolved[:,:]
+    temp = testingError
     testingError = Sum((htest - testingY).applyfunc(square))/48
+    print("lambda: %f\n\tError: %f" % (babyShep, testingError))
+    if temp < testingError :
+        break
     babyShep -= .2
     count+=1
 
@@ -162,11 +167,12 @@ elif minimum == abs(w3) :
     print("Removing attribute 3 from data as it has the smallest impact...")
     reducedX.col_del(3)
 
-
+# we will make the modified quadratic set (adds squared of each value as attribute)
 reducedQuadX = reducedX.col_insert(3, reducedX.col(1).applyfunc(square))
 reducedQuadX = reducedQuadX.col_insert(4, reducedX.col(2).applyfunc(square))
 
 # Cross Validation
+# Split our data into 3 parts (for both linear and quadratic run)
 redX1 = sympy.Matrix()
 redY1 = sympy.Matrix()
 redX2 = sympy.Matrix()
@@ -205,6 +211,7 @@ dataX = [redX1, redX2, redX3]
 dataY = [redY1, redY2, redY3]
 dataQuadX = [redQuadX1, redQuadX2, redQuadX3]
 
+# Find the testing error for linear k-fold cross validation
 LinearSumError = 0
 for i in range(3) :
     # now we need to set up the weight vector. we will use sympy for this as
@@ -255,6 +262,7 @@ for i in range(3) :
 LinearSumError = LinearSumError/3
 print("average error for linear is %f" % LinearSumError)
 
+# find the testing error for quadratic k-fold cross validation
 QuadSumError = 0
 for i in range(3) :
     # now we need to set up the weight vector. we will use sympy for this as
@@ -309,31 +317,159 @@ for i in range(3) :
 QuadSumError = QuadSumError/3
 print("average error for quad is %f" % QuadSumError)
 
-# 
+# keep track of which degree had less error.
+d = 0
 if(LinearSumError > QuadSumError):
-    # do shit
+    d = 2
 else:
-    # do shit
+    d = 1
 
+print("Degree %i had a lower average error" % d)
+
+# final fitting
+if d == 1 : # linear fit
+    print("Running 100 training sets linearly")
+    iterations = 0
+    generalizationErrors = np.empty(100)
+    modelingErrors = np.empty(100)
+    while iterations < 100 :
+        # first we need to split the data
+        trainingX = sympy.Matrix()
+        trainingY = sympy.Matrix()
+        testingX = sympy.Matrix()
+        testingY = sympy.Matrix()
+        for i in range(97) :
+            if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
+                trainingX = trainingX.row_insert(-1, reducedX.row(i))
+                trainingY = trainingY.row_insert(-1, y.row(i))
+            elif testingX.shape[0] < 48 :
+                testingX = testingX.row_insert(-1, reducedX.row(i))
+                testingY = testingY.row_insert(-1, y.row(i))
+            else :
+                trainingX = trainingX.row_insert(-1, reducedX.row(i))
+                trainingY = trainingY.row_insert(-1, y.row(i))
+
+        # now we need to set up the weight vector. we will use sympy for this as
+        # we want symbolics so we can do a gradient later on
+        w0, w1, w2 = sympy.symbols('w0, w1, w2')
+        w = sympy.Matrix([w0, w1, w2])
+
+
+        # Define now the linear hypothesis
+        hx = sympy.Matrix.zeros(m, 1)
+        for row in range(m):
+            hx[row,:] = trainingX[row,:]*w[:,:]
+
+        # now we define the error function
+        jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
+
+        grad0 = sympy.Derivative(jw, w0).doit()
+        grad1 = sympy.Derivative(jw, w1).doit()
+        grad2 = sympy.Derivative(jw, w2).doit()
+
+        solution = sympy.solve([grad0, grad1, grad2], dict=True)
+        w0 = solution[0][w0]
+        w1 = solution[0][w1]
+        w2 = solution[0][w2]
+        wSolved = sympy.Matrix([w0, w1, w2])
+
+        htest = sympy.Matrix.zeros(48, 1)
+        for row in range(48):
+            htest[row,:] = testingX[row,:]*wSolved[:,:]
+            hx[row,:] = trainingX[row,:]*wSolved[:,:]
+        hx[48,:] = trainingX[48,:]*wSolved[:,:]
+
+        generalizationError = Sum((htest - testingY).applyfunc(square))/testingY.shape[0]
+        modelingError = Sum((hx - trainingY).applyfunc(square))/trainingY.shape[0]
+        print("\tIteration: %i" % iterations)
+        generalizationErrors[iterations] = generalizationError
+        modelingErrors[iterations] = modelingError
+        iterations += 1
+else : # quadratic fit
+    print("Running 100 training sets quadratic")
+    iterations = 0
+    generalizationErrors = np.empty(100)
+    modelingErrors = np.empty(100)
+    while iterations < 100 :
+        # first we need to split the data
+        trainingX = sympy.Matrix()
+        trainingY = sympy.Matrix()
+        testingX = sympy.Matrix()
+        testingY = sympy.Matrix()
+        for i in range(97) :
+            if random.randint(0, 1) == 1 and trainingX.shape[0] < 49 :
+                trainingX = trainingX.row_insert(-1, reducedQuadX.row(i))
+                trainingY = trainingY.row_insert(-1, y.row(i))
+            elif testingX.shape[0] < 48 :
+                testingX = testingX.row_insert(-1, reducedQuadX.row(i))
+                testingY = testingY.row_insert(-1, y.row(i))
+            else :
+                trainingX = trainingX.row_insert(-1, reducedQuadX.row(i))
+                trainingY = trainingY.row_insert(-1, y.row(i))
+
+        # now we need to set up the weight vector. we will use sympy for this as
+        # we want symbolics so we can do a gradient later on
+        w0, w1, w2, w3, w4 = sympy.symbols('w0, w1, w2, w3, w4')
+        w = sympy.Matrix([w0, w1, w2, w3, w4])
+
+
+        # Define now the linear hypothesis
+        hx = sympy.Matrix.zeros(m, 1)
+        for row in range(m):
+            hx[row,:] = trainingX[row,:]*w[:,:]
+
+        # now we define the error function
+        jw = Sum((hx - trainingY).applyfunc(square)) + babyShep*Sum(w.applyfunc(square))
+
+        grad0 = sympy.Derivative(jw, w0).doit()
+        grad1 = sympy.Derivative(jw, w1).doit()
+        grad2 = sympy.Derivative(jw, w2).doit()
+        grad3 = sympy.Derivative(jw, w3).doit()
+        grad4 = sympy.Derivative(jw, w4).doit()
+
+        solution = sympy.solve([grad0, grad1, grad2, grad3, grad4], dict=True)
+        w0 = solution[0][w0]
+        w1 = solution[0][w1]
+        w2 = solution[0][w2]
+        w3 = solution[0][w3]
+        w4 = solution[0][w4]
+        wSolved = sympy.Matrix([w0, w1, w2, w3, w4])
+
+        htest = sympy.Matrix.zeros(48, 1)
+        for row in range(48):
+            htest[row,:] = testingX[row,:]*wSolved[:,:]
+            hx[row,:] = trainingX[row,:]*wSolved[:,:]
+        hx[48,:] = trainingX[48,:]*wSolved[:,:]
+
+        generalizationError = Sum((htest - testingY).applyfunc(square))/testingY.shape[0]
+        modelingError = Sum((hx - trainingY).applyfunc(square))/trainingY.shape[0]
+        print("\tIteration: %i" % iterations)
+        generalizationErrors[iterations] = generalizationError
+        modelingErrors[iterations] = modelingError
+        iterations += 1
+
+print("Generalization:")
+print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(generalizationErrors), np.amax(generalizationErrors), np.average(generalizationErrors)))
+print("Modeling")
+print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(modelingErrors), np.amax(modelingErrors), np.average(modelingErrors)))
 quit()
-# Part 2: Plot
+# Plot the error
 t = sympy.symbols('t')
-linReg = w0 + w1*t
-lam_x = sympy.lambdify(t, linReg, modules=['numpy'])
-x_vals = linspace(float(min(x)), float(max(x)), 100)
-y_vals = lam_x(x_vals)
+#linReg = w0 + w1*t
+#lam_x = sympy.lambdify(t, linReg, modules=['numpy'])
+#x_vals = linspace(float(min(x)), float(max(x)), 100)
+x_vals = np.arrange(0, 99)
+#y_vals = lam_x(x_vals)
 
-'''mpl.title("Linear Regression from Symbolic Variable Solving")
-mpl.xlabel("City Population (in 10,000s)")
-mpl.ylabel("Estimated Company Profit (in 10,000s)")
-mpl.plot(x_vals, y_vals)
-mpl.plot(x, y, 'go')'''
+fig = mpl.figure()
+ax0 = fig.add_subplot(111, projection='3d')
+ax0.plot_surface(x_vals, modelingErrors, generalizationErrors)
+ax0.set_title("Error of 100 training sets")
+ax0.set_xlabel("Iteration")
+ax0.set_ylabel("Modeling Error")
 
-# we will make some predictions as well
-predict1 = 1*w0 + 3.5*w1
-print("For the population = 35,000, we predict a profit of $%.2f" % (predict1*10000))
-predict2 = 1*w0 + 7*w1
-print("For the population = 70,000, we predict a profit of $%.2f\n" % (predict2*10000))
+#mpl.plot(x_vals, y_vals)
+#mpl.plot(x, y, 'go')
 
 '''# contour plots
 J_vals = J_vals.T

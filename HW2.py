@@ -37,7 +37,7 @@ def stdColumn(column, mean):
 square = lambda x: x*x
 
 # imported dataset
-#lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
+# lines = [line.rstrip('\n') for line in open("hm2Data.csv")]
 lines = [line.rstrip('\n') for line in open("hm2Data2.csv")]
 m = len(lines)
 x = sympy.Matrix.zeros(m, 3)
@@ -381,7 +381,10 @@ if d == 1 : # linear fit
 
         generalizationError = Sum((htest - testingY).applyfunc(square))/testingY.shape[0]
         modelingError = Sum((hx - trainingY).applyfunc(square))/trainingY.shape[0]
-        print("\tIteration: %i" % iterations)
+
+        sys.stdout.write("\r%s%%" % str(iterations+1))
+        sys.stdout.flush()
+
         generalizationErrors[iterations] = generalizationError
         modelingErrors[iterations] = modelingError
         iterations += 1
@@ -443,49 +446,50 @@ else : # quadratic fit
 
         generalizationError = Sum((htest - testingY).applyfunc(square))/testingY.shape[0]
         modelingError = Sum((hx - trainingY).applyfunc(square))/trainingY.shape[0]
-        print("\tIteration: %i" % iterations)
+
+        sys.stdout.write("\r%s%%" % str(iterations+1))
+        sys.stdout.flush()
+
         generalizationErrors[iterations] = generalizationError
         modelingErrors[iterations] = modelingError
         iterations += 1
 
-print("Generalization:")
+print("\nGeneralization:")
 print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(generalizationErrors), np.amax(generalizationErrors), np.average(generalizationErrors)))
 print("Modeling")
 print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(modelingErrors), np.amax(modelingErrors), np.average(modelingErrors)))
-quit()
+
 # Plot the error
+mpl.figure(1)
+x_vals = np.linspace(0, 99, 100)
+
+mpl.plot(x_vals, generalizationErrors, 'r-',label="Generalization Error")
+mpl.plot(x_vals, modelingErrors, 'g-', label="Modeling Error")
+mpl.legend(loc='best')
+mpl.title("Generalization vs Modeling Error")
+mpl.xlabel("Iteration")
+mpl.ylabel("Error")
+
+
+# Plot regression line
+mpl.figure(2)
 t = sympy.symbols('t')
-#linReg = w0 + w1*t
-#lam_x = sympy.lambdify(t, linReg, modules=['numpy'])
-#x_vals = linspace(float(min(x)), float(max(x)), 100)
-x_vals = np.arrange(0, 99)
-#y_vals = lam_x(x_vals)
+if(d == 1):
+    # Linear
+    regression = w0 + w1*t + w2*t
+else:
+    # Quad
+    regression = w0 + w1*t + w2*t + w3*t**2 + w4*t**2
+lam_x = sympy.lambdify(t, regression, modules=['numpy'])
 
-fig = mpl.figure()
-ax0 = fig.add_subplot(111, projection='3d')
-ax0.plot_surface(x_vals, modelingErrors, generalizationErrors)
-ax0.set_title("Error of 100 training sets")
-ax0.set_xlabel("Iteration")
-ax0.set_ylabel("Modeling Error")
+x_vals = linspace(float(min(x)), float(max(x)), 100)
+y_vals = lam_x(x_vals);
+# mpl.plot(x_vals, y_vals)
+mpl.plot(x,y,'b.')
 
-#mpl.plot(x_vals, y_vals)
-#mpl.plot(x, y, 'go')
 
-'''# contour plots
-J_vals = J_vals.T
-fig = mpl.figure()
-ax = fig.add_subplot(211, projection='3d')
-w0_vals, w1_vals = np.meshgrid(w0_vals, w1_vals)
-ax.plot_surface(w0_vals, w1_vals, J_vals)
-ax.set_xlabel('w_0')
-ax.set_ylabel('w_1')
-ax.set_title('Surface')
+# Plot cost contours
+# mpl.figure(3)
 
-ax2 = fig.add_subplot(212, projection='3d')
-ax2.contour(w0_vals, w1_vals, J_vals, np.logspace(-2, 3, 20))
-ax2.set_title('Contour')
-ax2.set_xlabel('w_0')
-ax2.set_ylabel('w_1')
-numpyW = np.matrix(w).astype(np.float64)
-ax2.plot(numpyW[0], numpyW[1], 'rx', markersize=10, linewidth=2)'''
+
 mpl.show()

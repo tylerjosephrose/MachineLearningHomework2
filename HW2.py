@@ -105,8 +105,7 @@ for i in range(97) :
 # we will reset m to the size of the training set
 m = trainingX.shape[0]
 testingError = 100
-# babyShep = 5
-babyShep = .2
+babyShep = 2
 count = 0
 while(babyShep > 0):
 
@@ -327,15 +326,16 @@ if(LinearSumError > QuadSumError):
 else:
     d = 1
 
+iterCount = 100
+
 print("Degree %i had a lower average error" % d)
-jwArray = []
 # final fitting
 if d == 1 : # linear fit
     print("Running 100 training sets linearly")
     iterations = 0
-    generalizationErrors = np.empty(10)
-    modelingErrors = np.empty(10)
-    while iterations < 10 :
+    generalizationErrors = np.empty(iterCount)
+    modelingErrors = np.empty(iterCount)
+    while iterations < iterCount :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -394,9 +394,9 @@ if d == 1 : # linear fit
 else : # quadratic fit
     print("Running 100 training sets quadratic")
     iterations = 0
-    generalizationErrors = np.empty(10)
-    modelingErrors = np.empty(10)
-    while iterations < 10 :
+    generalizationErrors = np.empty(iterCount)
+    modelingErrors = np.empty(iterCount)
+    while iterations < iterCount :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -464,8 +464,8 @@ print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(modelingErrors), np.amax(mode
 
 # Plot the error
 mpl.figure(1)
-x_vals = np.linspace(-2, 7, 10)
-y_vals = np.linspace(-2, 7, 10)
+x_vals = np.linspace(-2, 7, iterCount)
+y_vals = np.linspace(-2, 7, iterCount)
 
 mpl.plot(x_vals, generalizationErrors, 'r-',label="Generalization Error")
 mpl.plot(x_vals, modelingErrors, 'g-', label="Modeling Error")
@@ -508,13 +508,49 @@ ax.set_title('Regression vs. Data Points')
 
 # Plot cost contours
 
-ax2 = fig.add_subplot(112, projection='3d')
-ax2.contour(w0_vals, w1_vals, J_vals, np.logspace(-2, 3, 20))
+print("Visualizing J ...\n")
+
+# Grid in which we will calculate J
+w3_vals = np.linspace(-2, 7, iterCount)
+w4_vals = np.linspace(-2, 7, iterCount)
+w0_vals = np.full(iterCount,w0)
+w1_vals = np.full(iterCount,w1)
+w2_vals = np.full(iterCount,w2)
+
+# initialize J_vals to a matrix of 0's
+J_vals = np.zeros((len(w3_vals), len(w4_vals)))
+m = len(y)
+# Fill out J_vals
+for i in range(len(w3_vals)):
+    for j in range(len(w4_vals)):
+        t = sympy.Matrix([w0_vals[i], w1_vals[i], w2_vals[i], w3_vals[i], w4_vals[j]])
+        hw = sympy.Matrix.zeros(m, 1)
+        for h in range(m):
+            hw[h] = reducedQuadX[h,:]*t[:,:]
+        # this is here as a progress marker
+        #if ((i*100 + j - 100) % 100) == 0:
+            #print(i*100 + j)
+        J_vals[i,j] = (1/(2*m))*Sum((hw - y).applyfunc(square))
+
+J_vals = J_vals.T
+fig = mpl.figure()
+ax = fig.add_subplot(211, projection='3d')
+w3_vals, w4_vals = np.meshgrid(w3_vals, w4_vals)
+ax.plot_surface(w3_vals, w4_vals, J_vals)
+ax.set_xlabel('w_3')
+ax.set_ylabel('w_4')
+ax.set_title('Surface')
+
+# Contour plot
+w = sympy.Matrix([w3,w4])
+ax2 = fig.add_subplot(212, projection='3d')
+ax2.contour(w3_vals, w4_vals, J_vals, np.logspace(-2, 3, 20))
 ax2.set_title('Contour')
-ax2.set_xlabel('w_0')
-ax2.set_ylabel('w_1')
+ax2.set_xlabel('w_3')
+ax2.set_ylabel('w_4')
 numpyW = np.matrix(w).astype(np.float64)
 ax2.plot(numpyW[0], numpyW[1], 'rx', markersize=10, linewidth=2)
+
 
 mpl.show()
 

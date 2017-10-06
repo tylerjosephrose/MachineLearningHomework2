@@ -9,6 +9,7 @@ try:
     import numpy as np
     from numpy import linspace, matrix
     import matplotlib.pyplot as mpl
+    from mpl_toolkits.mplot3d import Axes3D
 except ImportError:
     sys.exit("""You need sympy, numpy, and matplotlib! Install these by running:
                 pip install sympy
@@ -42,13 +43,14 @@ lines = [line.rstrip('\n') for line in open("hm2Data2.csv")]
 m = len(lines)
 x = sympy.Matrix.zeros(m, 3)
 y = sympy.Matrix.zeros(m, 1)
+
 for i in range(m):
     splitString = lines[i].split(',')
     x[i,0] = splitString[0]
     x[i,1] = splitString[1]
     x[i,2] = splitString[2]
     y[i] = splitString[3]
-
+    
 # Calculate mean and std dev.
 meanVector = sympy.Matrix.zeros(3, 1)
 stdVector = sympy.Matrix.zeros(3, 1)
@@ -326,14 +328,14 @@ else:
     d = 1
 
 print("Degree %i had a lower average error" % d)
-
+jwArray = []
 # final fitting
 if d == 1 : # linear fit
     print("Running 100 training sets linearly")
     iterations = 0
-    generalizationErrors = np.empty(25)
-    modelingErrors = np.empty(25)
-    while iterations < 25 :
+    generalizationErrors = np.empty(10)
+    modelingErrors = np.empty(10)
+    while iterations < 10 :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -392,9 +394,9 @@ if d == 1 : # linear fit
 else : # quadratic fit
     print("Running 100 training sets quadratic")
     iterations = 0
-    generalizationErrors = np.empty(25)
-    modelingErrors = np.empty(25)
-    while iterations < 25 :
+    generalizationErrors = np.empty(10)
+    modelingErrors = np.empty(10)
+    while iterations < 10 :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -462,7 +464,8 @@ print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(modelingErrors), np.amax(mode
 
 # Plot the error
 mpl.figure(1)
-x_vals = np.linspace(0, 24, 25)
+x_vals = np.linspace(-2, 7, 10)
+y_vals = np.linspace(-2, 7, 10)
 
 mpl.plot(x_vals, generalizationErrors, 'r-',label="Generalization Error")
 mpl.plot(x_vals, modelingErrors, 'g-', label="Modeling Error")
@@ -473,64 +476,45 @@ mpl.ylabel("Error")
 
 
 # Plot regression line
-mpl.figure(2)
-t = sympy.symbols('t')
+fig = mpl.figure()
+
+z_vals = np.zeros(shape=(len(x_vals),len(y_vals)))
 if(d == 1):
     # Linear
-    regression = w0 + w1*t + w2*t
+    for i in range(len(x_vals)):
+        for j in range(len(y_vals)):
+            z_vals[i,j] = w0 + w1*x_vals[i] + w2*y_vals[j]
+
 else:
     # Quad
-    regression = w0 + (w1+w2)*t + (w3+w4)*t**2
-lam_x = sympy.lambdify(t, regression, modules=['numpy'])
-x_vals = linspace(float(min(x)), float(max(x)), 25)
-y_vals = lam_x(x_vals);
-# mpl.plot(x_vals, y_vals)
-mpl.plot(x,y,'b.')
+    for i in range(len(x_vals)):
+        for j in range(len(y_vals)):
+            z_vals[i,j] = w0 + w1*x_vals[i] + w2*y_vals[j] + w3*x_vals[i]**2 + w4*y_vals[j]**2
+
+# 3d plot
+x_vals2 = reducedX.col(1)
+y_vals2 = reducedX.col(2)
+x_vals2 = np.array(x_vals2).astype(np.float64)
+y_vals2 = np.array(y_vals2).astype(np.float64)
+z_vals2 = np.array(y).astype(np.float64)
+ax = fig.add_subplot(111, projection='3d')
+x_vals, y_vals = np.meshgrid(x_vals, y_vals)
+ax.scatter(x_vals2, y_vals2, z_vals2, c="r")
+ax.plot_surface(x_vals, y_vals, z_vals, color="g", alpha = 0.5)
+ax.set_xlabel('x_vals')
+ax.set_ylabel('y_vals')
+ax.set_title('Regression vs. Data Points')
 
 
 # Plot cost contours
-fig = mpl.figure(3)
-# Visualizing the cost function 
-# print("Visualizing J(w_0, w_1) ...\n")
 
-# # Grid in which we will calculate J
-# w0_vals = np.linspace(-10, 10, 100)
-# w1_vals = np.linspace(-1, 4, 100)
-
-# # initialize J_vals to a matrix of 0's
-# J_vals = np.zeros((len(w0_vals), len(w1_vals)))
-
-# # Fill out J_vals
-# for i in range(len(w0_vals)):
-#     for j in range(len(w1_vals)):
-#         t = sympy.Matrix([w0_vals[i], w1_vals[j]])
-#         hw = sympy.Matrix.zeros(m, 1)
-#         for h in range(m):
-#             hw[h] = ex[h,:]*t[:,:]
-#         # this is here as a progress marker
-#         #if ((i*100 + j - 100) % 100) == 0:
-#             #print(i*100 + j)
-#         J_vals[i,j] = (1/(2*m))*Sum((hw - y).applyfunc(square))
-
-# J_vals = J_vals.T
-# ax = fig.add_subplot(211, projection='3d')
-# w0_vals, w1_vals = np.meshgrid(w0_vals, w1_vals)
-# ax.plot_surface(w0_vals, w1_vals, J_vals)
-# ax.set_xlabel('w_0')
-# ax.set_ylabel('w_1')
-# ax.set_title('Surface')
-
-# # Contour plot
-
-# ax2 = fig.add_subplot(212, projection='3d')
-# ax2.contour(w0_vals, w1_vals, J_vals, np.logspace(-2, 3, 20))
-# ax2.set_title('Contour')
-# ax2.set_xlabel('w_0')
-# ax2.set_ylabel('w_1')
-# numpyW = np.matrix(w).astype(np.float64)
-# ax2.plot(numpyW[0], numpyW[1], 'rx', markersize=10, linewidth=2)
-
-
+ax2 = fig.add_subplot(112, projection='3d')
+ax2.contour(w0_vals, w1_vals, J_vals, np.logspace(-2, 3, 20))
+ax2.set_title('Contour')
+ax2.set_xlabel('w_0')
+ax2.set_ylabel('w_1')
+numpyW = np.matrix(w).astype(np.float64)
+ax2.plot(numpyW[0], numpyW[1], 'rx', markersize=10, linewidth=2)
 
 mpl.show()
 

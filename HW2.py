@@ -508,7 +508,7 @@ ax.set_title('Regression vs. Data Points')
 
 # Plot cost contours
 
-print("Visualizing J ...\n")
+print("Visualizing J (this is going to take a while)...\n")
 
 # Grid in which we will calculate J
 w3_vals = np.linspace(-2, 7, iterCount)

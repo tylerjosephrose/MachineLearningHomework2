@@ -103,7 +103,8 @@ for i in range(97) :
 # we will reset m to the size of the training set
 m = trainingX.shape[0]
 testingError = 100
-babyShep = 5
+# babyShep = 5
+babyShep = .2
 count = 0
 while(babyShep > 0):
 
@@ -330,9 +331,9 @@ print("Degree %i had a lower average error" % d)
 if d == 1 : # linear fit
     print("Running 100 training sets linearly")
     iterations = 0
-    generalizationErrors = np.empty(100)
-    modelingErrors = np.empty(100)
-    while iterations < 100 :
+    generalizationErrors = np.empty(25)
+    modelingErrors = np.empty(25)
+    while iterations < 25 :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -391,9 +392,9 @@ if d == 1 : # linear fit
 else : # quadratic fit
     print("Running 100 training sets quadratic")
     iterations = 0
-    generalizationErrors = np.empty(100)
-    modelingErrors = np.empty(100)
-    while iterations < 100 :
+    generalizationErrors = np.empty(25)
+    modelingErrors = np.empty(25)
+    while iterations < 25 :
         # first we need to split the data
         trainingX = sympy.Matrix()
         trainingY = sympy.Matrix()
@@ -461,7 +462,7 @@ print("\tMin: %f\n\tMax: %f\n\tAvg: %f" % (np.amin(modelingErrors), np.amax(mode
 
 # Plot the error
 mpl.figure(1)
-x_vals = np.linspace(0, 99, 100)
+x_vals = np.linspace(0, 24, 25)
 
 mpl.plot(x_vals, generalizationErrors, 'r-',label="Generalization Error")
 mpl.plot(x_vals, modelingErrors, 'g-', label="Modeling Error")
@@ -479,17 +480,57 @@ if(d == 1):
     regression = w0 + w1*t + w2*t
 else:
     # Quad
-    regression = w0 + w1*t + w2*t + w3*t**2 + w4*t**2
+    regression = w0 + (w1+w2)*t + (w3+w4)*t**2
 lam_x = sympy.lambdify(t, regression, modules=['numpy'])
-
-x_vals = linspace(float(min(x)), float(max(x)), 100)
+x_vals = linspace(float(min(x)), float(max(x)), 25)
 y_vals = lam_x(x_vals);
 # mpl.plot(x_vals, y_vals)
 mpl.plot(x,y,'b.')
 
 
 # Plot cost contours
-# mpl.figure(3)
+fig = mpl.figure(3)
+# Visualizing the cost function 
+# print("Visualizing J(w_0, w_1) ...\n")
+
+# # Grid in which we will calculate J
+# w0_vals = np.linspace(-10, 10, 100)
+# w1_vals = np.linspace(-1, 4, 100)
+
+# # initialize J_vals to a matrix of 0's
+# J_vals = np.zeros((len(w0_vals), len(w1_vals)))
+
+# # Fill out J_vals
+# for i in range(len(w0_vals)):
+#     for j in range(len(w1_vals)):
+#         t = sympy.Matrix([w0_vals[i], w1_vals[j]])
+#         hw = sympy.Matrix.zeros(m, 1)
+#         for h in range(m):
+#             hw[h] = ex[h,:]*t[:,:]
+#         # this is here as a progress marker
+#         #if ((i*100 + j - 100) % 100) == 0:
+#             #print(i*100 + j)
+#         J_vals[i,j] = (1/(2*m))*Sum((hw - y).applyfunc(square))
+
+# J_vals = J_vals.T
+# ax = fig.add_subplot(211, projection='3d')
+# w0_vals, w1_vals = np.meshgrid(w0_vals, w1_vals)
+# ax.plot_surface(w0_vals, w1_vals, J_vals)
+# ax.set_xlabel('w_0')
+# ax.set_ylabel('w_1')
+# ax.set_title('Surface')
+
+# # Contour plot
+
+# ax2 = fig.add_subplot(212, projection='3d')
+# ax2.contour(w0_vals, w1_vals, J_vals, np.logspace(-2, 3, 20))
+# ax2.set_title('Contour')
+# ax2.set_xlabel('w_0')
+# ax2.set_ylabel('w_1')
+# numpyW = np.matrix(w).astype(np.float64)
+# ax2.plot(numpyW[0], numpyW[1], 'rx', markersize=10, linewidth=2)
+
 
 
 mpl.show()
+
